@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Orbital 3D — Billboard labels</title>
+  <style>
+    html, body { height: 100%; margin: 0; background: #111; color: #fff; }
+    body { font-family: Arial, sans-serif; }
+    canvas { display:block; }
+
+    /* Panel */
+    #ui {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      background: rgba(0,0,0,0.55);
+      padding: 12px;
+      border-radius: 8px;
+      z-index: 9999;
+      color: #fff;
+      box-sizing: border-box;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.6);
+      width: auto;
+      min-width: 120px;
+    }
+
+    /* Hero title (top-center) */
+    #heroTitle {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10002;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      pointer-events: none;
+      text-align: center;
+    }
+
+    /* Footer credit (bottom-center) */
+    #footerCredit {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10002;
+      color: #e6f0fb;
+      font-weight: 700;
+      font-size: 13px;
+      pointer-events: none;
+      text-align: center;
+    }
+
+    /* header area (for language select at the top of panel) */
+    #uiHeader {
+      display:flex;
+      justify-content: flex-end;
+      margin-bottom: 8px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* Each field: label above input; labels left-aligned with control */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+      align-items: flex-start;            /* left align items horizontally */
+    }
+
+    #ui label {
+      font-size: 13px;
+      margin: 0;
+      color: #e6f0fb;
+      white-space: nowrap;            /* measure natural size */
+      display: block;
+      text-align: left;               /* left align label text */
+      /* width will be set dynamically by JS to match controls */
+    }
+
+    /* Inputs & Buttons unified sizing */
+    :root {
+      --field-width: 160px; /* fallback, overwritten by JS */
+      --field-height: 28px; /* compact height */
+      --field-font-size: 14px;
+    }
+
+    #ui input[type="number"], #ui input[type="text"], #ui select {
+      width: var(--field-width);
+      height: var(--field-height);
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: #fff;
+      font-size: var(--field-font-size);
+      box-sizing: border-box;
+      outline: none;
+      transition: box-shadow .12s ease, border-color .12s ease, filter .08s ease;
+      display: inline-block;
+      line-height: 1;
+    }
+
+    /* language select styling to look like a button + caret handled by wrapper */
+    .select-wrap {
+      position: relative;
+      width: var(--field-width);
+      height: var(--field-height);
+      display: inline-block;
+    }
+    select.lang-select {
+      width: 100%;
+      height: 100%;
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #ffffff;
+      color: #042027;            /* text in closed select (dark) */
+      font-weight: 700;
+      padding: 0 34px 0 12px; /* space for custom caret on the right */
+      box-sizing: border-box;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      cursor: pointer;
+    }
+    /* Ensure options inside select show black text on white background */
+    select.lang-select option {
+      color: #000000;          /* option text black */
+      background: #ffffff;     /* option background white */
+    }
+    /* For some browsers that require vendor-specific pseudo styling */
+    select.lang-select::-ms-expand { display: none; }
+
+    /* custom caret (triangle) on the select wrapper */
+    .select-wrap::after {
+      content: "";
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 6px solid #042027; /* dark arrow visible on white background */
+      pointer-events: none;
+    }
+
+    /* Buttons: unified size with inputs */
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+      align-items: flex-start; /* left align actions to match labels/controls */
+    }
+    #ui .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--field-width);
+      height: var(--field-height);
+      padding: 0 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: #ffffff;
+      color: #042027;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: var(--field-font-size);
+      box-sizing: border-box;
+      transition: filter .12s ease, box-shadow .12s ease;
+      box-shadow: none;
+      white-space: nowrap;
+    }
+    #ui .btn:hover {
+      filter: brightness(1.06);
+      box-shadow: 0 10px 30px rgba(255,255,255,0.06);
+    }
+    #ui .btn.secondary {
+      background: #ffffff;
+      color: #042027;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    /* Orbital label: tăng cỡ chữ */
+    #orbitalLabel {
+      margin-top: 6px;
+      font-size: 15px;
+      color: #cfeff8;
+      line-height: 1.2;
+      text-align: left;
+    }
+    #orbitalLabel sub { font-size: 0.85em; vertical-align: sub; }
+    #orbitalLabel sup { font-size: 0.75em; vertical-align: super; }
+
+    /* progress/status unchanged */
+    #progress {
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      color: #fff;
+      font-size: 14px;
+      z-index: 10000;
+      pointer-events: none;
+      background: rgba(0,0,0,0.25);
+      padding: 4px 8px;
+      border-radius: 4px;
+      display:none;
+    }
+    #status {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 6px;
+      z-index: 10001;
+      font-size: 13px;
+      max-width: 360px;
+      white-space: pre-wrap;
+      display:none;
+    }
+
+    /* Axis labels (x, y, z) — tăng cỡ chữ một chút */
+    .axis-label, #xLabel, #yLabel, #zLabel {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f1f8fb;
+    }
+
+    @media (max-width:480px){
+      :root { --field-width: calc(100% - 40px); }
+      #ui { left: 8px; top: 8px; width: calc(100% - 16px); padding: 10px; }
+      #ui .btn, #ui input[type="number"] { width: var(--field-width); }
+      .select-wrap { width: var(--field-width); }
+      select.lang-select { width: 100%; }
+      #heroTitle { font-size: 14px; top: 8px; }
+      #footerCredit { font-size: 12px; bottom: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="heroTitle" aria-hidden="true">Mô phỏng Orbital 3D</div>
+
+  <div id="ui" role="region" aria-label="Điều khiển">
+    <div id="uiHeader">
+      <!-- language selector as a dropdown with a custom caret -->
+      <div class="select-wrap" aria-hidden="false">
+        <!-- hidden label updated by JS for localization -->
+        <label id="langHiddenLabel" for="langSelect" style="display:none">Ngôn ngữ</label>
+        <select id="langSelect" class="lang-select" aria-label="Chọn ngôn ngữ">
+          <option value="vi" selected>Tiếng Việt</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label id="nLabel" for="nInput">Số lượng tử chính (n)</label>
+      <input id="nInput" type="number" min="1" value="1" inputmode="numeric" />
+    </div>
+
+    <div class="field">
+      <label id="lLabel" for="lInput">Số lượng tử phụ (l)</label>
+      <input id="lInput" type="number" min="0" value="0" inputmode="numeric" />
+    </div>
+
+    <div class="field">
+      <label id="mLabel" for="mInput">Số lượng tử từ (m<sub>l</sub>)</label>
+      <input id="mInput" type="number" value="0" inputmode="numeric" />
+    </div>
+
+    <div class="field">
+      <label id="electronSizeLabel" for="electronSizeInput">Kích thước electron</label>
+      <input id="electronSizeInput" type="number" min="0.1" step="0.1" value="1" inputmode="numeric" />
+    </div>
+
+    <div class="field">
+      <label id="numPointsLabel" for="numElectronsInput">Số điểm</label>
+      <input id="numElectronsInput" type="number" min="1" max="2000000" value="5000" inputmode="numeric" />
+    </div>
+
+    <div class="actions" role="toolbar" aria-label="Hành động">
+      <button id="createBtn" class="btn" title="Tạo orbital" aria-label="Tạo orbital">Tạo orbital</button>
+      <button id="toggleRotateBtn" class="btn secondary" title="Bật/Tắt xoay tự động" aria-label="Bật/Tắt xoay tự động">Tắt xoay tự động</button>
+      <div id="orbitalLabel" aria-live="polite">Orbital: 1s</div>
+    </div>
+  </div>
+
+  <div id="footerCredit" aria-hidden="true">© HÓA HỌC ABC</div>
+
+  <div id="progress">Đang tải...</div>
+  <div id="status" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.8.0/lib/p5.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.8.0/lib/addons/p5.dom.min.js"></script>
+  <script src="sketch.js"></script>
+
+  <script>
+    // Ensure default language is Vietnamese when first visiting
+    if (!localStorage.getItem('orbital_lang')) {
+      localStorage.setItem('orbital_lang', 'vi');
+    }
+
+    // Helper: map quantum numbers to orbital html using standard real (Cartesian) labels
+    // and enforce physical constraints l <= n-1 and |m| <= l.
+    function orbitalHtmlFromQuantum(n, l, m) {
+      n = parseInt(n, 10);
+      l = parseInt(l, 10);
+      m = parseInt(m, 10);
+
+      if (isNaN(l)) return 'unknown';
+      if (isNaN(m) || Math.abs(m) > l) return 'invalid';
+
+      // enforce physical rule: 0 <= l <= n-1 (if n provided)
+      if (!isNaN(n) && (l < 0 || l >= n)) return 'invalid';
+
+      // s orbital
+      if (l === 0) return 's';
+
+      // p orbitals: real combinations p_x, p_y, p_z
+      if (l === 1) {
+        if (m === 0) return 'p<sub>z</sub>';
+        if (m === 1) return 'p<sub>x</sub>';
+        if (m === -1) return 'p<sub>y</sub>';
+        return 'p';
+      }
+
+      // d orbitals: common real labels used in quantum chemistry
+      if (l === 2) {
+        if (m === 0) return 'd<sub>z<sup>2</sup></sub>';               // d_z^2
+        if (m === 1) return 'd<sub>xz</sub>';
+        if (m === -1) return 'd<sub>yz</sub>';
+        if (m === 2) return 'd<sub>x<sup>2</sup>-y<sup>2</sup></sub>'; // d_{x^2-y^2}
+        if (m === -2) return 'd<sub>xy</sub>';
+        return 'd';
+      }
+
+      // f orbitals: standard real combinations (Cartesian-like names)
+      if (l === 3) {
+        switch (m) {
+          case 0:  return 'f<sub>z<sup>3</sup></sub>';                         // f_z^3
+          case 1:  return 'f<sub>xz<sup>2</sup></sub>';                       // f_x z^2
+          case -1: return 'f<sub>yz<sup>2</sup></sub>';                       // f_y z^2
+          case 2:  return 'f<sub>xyz</sub>';                                  // f_xyz
+          case -2: return 'f<sub>z(x<sup>2</sup>-y<sup>2</sup>)</sub>';       // f_z(x^2 - y^2)
+          case 3:  return 'f<sub>x(x<sup>2</sup>-3y<sup>2</sup>)</sub>';      // f_x(x^2 - 3y^2)
+          case -3: return 'f<sub>y(3x<sup>2</sup>-y<sup>2</sup>)</sub>';      // f_y(3x^2 - y^2)
+          default: return 'f';
+        }
+      }
+
+      // g orbitals (l = 4) — Cartesian monomials common in QC notation (representative)
+      if (l === 4) {
+        switch (m) {
+          case 0:  return 'g<sub>z<sup>4</sup></sub>';                     // z^4
+          case 1:  return 'g<sub>xz<sup>3</sup></sub>';                   // x z^3
+          case -1: return 'g<sub>yz<sup>3</sup></sub>';                   // y z^3
+          case 2:  return 'g<sub>x<sup>2</sup>z<sup>2</sup></sub>';       // x^2 z^2
+          case -2: return 'g<sub>y<sup>2</sup>z<sup>2</sup></sub>';      // y^2 z^2
+          case 3:  return 'g<sub>x<sup>3</sup>z</sub>';                  // x^3 z
+          case -3: return 'g<sub>y<sup>3</sup>z</sub>';                 // y^3 z
+          case 4:  return 'g<sub>x<sup>4</sup></sub>';                    // x^4
+          case -4: return 'g<sub>y<sup>4</sup></sub>';                   // y^4
+          default: return 'g';
+        }
+      }
+
+      // h orbitals (l = 5) — Cartesian monomials representative
+      if (l === 5) {
+        switch (m) {
+          case 0:  return 'h<sub>z<sup>5</sup></sub>';                    // z^5
+          case 1:  return 'h<sub>xz<sup>4</sup></sub>';                  // x z^4
+          case -1: return 'h<sub>yz<sup>4</sup></sub>';                  // y z^4
+          case 2:  return 'h<sub>x<sup>2</sup>z<sup>3</sup></sub>';      // x^2 z^3
+          case -2: return 'h<sub>y<sup>2</sup>z<sup>3</sup></sub>';     // y^2 z^3
+          case 3:  return 'h<sub>x<sup>3</sup>z<sup>2</sup></sub>';      // x^3 z^2
+          case -3: return 'h<sub>y<sup>3</sup>z<sup>2</sup></sub>';     // y^3 z^2
+          case 4:  return 'h<sub>x<sup>4</sup>z</sub>';                 // x^4 z
+          case -4: return 'h<sub>y<sup>4</sup>z</sub>';                // y^4 z
+          case 5:  return 'h<sub>x<sup>5</sup></sub>';                   // x^5
+          case -5: return 'h<sub>y<sup>5</sup></sub>';                  // y^5
+          default: return 'h';
+        }
+      }
+
+      // Fallback for l >= 6: letter + subscript m
+      const letters = ['s','p','d','f','g','h','i','k','l','m','n','o'];
+      const letter = letters[l] || `l${l}`;
+
+      if (m === 0) return `${letter}`;
+      return `${letter}<sub>${m}</sub>`;
+    }
+
+    (function(){
+      const langSelect = document.getElementById('langSelect');
+      const nEl = document.getElementById('nInput');
+      const lEl = document.getElementById('lInput');
+      const mEl = document.getElementById('mInput');
+      const label = document.getElementById('orbitalLabel');
+      const toggleBtn = document.getElementById('toggleRotateBtn');
+      const createBtn = document.getElementById('createBtn');
+
+      const nLabelEl = document.getElementById('nLabel');
+      const lLabelEl = document.getElementById('lLabel');
+      const mLabelEl = document.getElementById('mLabel');
+      const electronSizeLabelEl = document.getElementById('electronSizeLabel');
+      const numPointsLabelEl = document.getElementById('numPointsLabel');
+
+      const uiRegion = document.getElementById('ui');
+      const langHiddenLabel = document.getElementById('langHiddenLabel');
+      const progressEl = document.getElementById('progress');
+      const statusEl = document.getElementById('status');
+
+      // Translations
+      const translations = {
+        vi: {
+          nLabel: 'Số lượng tử chính (n)',
+          lLabel: 'Số lượng tử phụ (l)',
+          mLabel: 'Số lượng tử từ (m<sub>l</sub>)',
+          electronSizeLabel: 'Kích thước electron',
+          numPointsLabel: 'Số điểm',
+          createBtn: 'Tạo orbital',
+          createBtnTitle: 'Tạo orbital',
+          toggleRotateOn: 'Tắt xoay tự động',
+          toggleRotateOff: 'Bật xoay tự động',
+          toggleRotateOnTitle: 'Tắt chế độ xoay tự động',
+          toggleRotateOffTitle: 'Bật chế độ xoay tự động',
+          orbitalPrefix: 'Orbital:',
+          langOptionText_vi: 'Tiếng Việt',
+          langOptionText_en: 'English',
+          langSelectTitle: 'Chuyển ngôn ngữ',
+          controlsRegion: 'Điều khiển',
+          langHiddenLabel: 'Ngôn ngữ',
+          progressLoading: 'Đang tải...',
+          actionsToolbarLabel: 'Hành động',
+          statusDefault: ''
+        },
+        en: {
+          nLabel: 'Principal quantum number (n)',
+          lLabel: 'Azimuthal quantum number (l)',
+          mLabel: 'Magnetic quantum number (m<sub>l</sub>)',
+          electronSizeLabel: 'Electron size',
+          numPointsLabel: 'Number of points',
+          createBtn: 'Create orbital',
+          createBtnTitle: 'Create orbital',
+          toggleRotateOn: 'Turn auto-rotate off',
+          toggleRotateOff: 'Turn auto-rotate on',
+          toggleRotateOnTitle: 'Turn auto-rotate off',
+          toggleRotateOffTitle: 'Turn auto-rotate on',
+          orbitalPrefix: 'Orbital:',
+          langOptionText_vi: 'Tiếng Việt',
+          langOptionText_en: 'English',
+          langSelectTitle: 'Switch language',
+          controlsRegion: 'Controls',
+          langHiddenLabel: 'Language',
+          progressLoading: 'Loading...',
+          actionsToolbarLabel: 'Actions',
+          statusDefault: ''
+        }
+      };
+
+      // Current language (persist in localStorage). Default to 'vi' if not set.
+      let currentLang = localStorage.getItem('orbital_lang') || 'vi';
+
+      // Update field width CSS variable to match the widest label exactly (no extra padding).
+      function updateFieldWidth() {
+        const labels = Array.from(document.querySelectorAll('#ui .field > label'));
+        if (!labels.length) return;
+        let maxW = 0;
+        labels.forEach(l => {
+          // use scrollWidth to capture natural width even if CSS width previously set
+          const w = l.scrollWidth;
+          if (w > maxW) maxW = w;
+        });
+        // Use the exact content width rounded up; ensure sensible minimum
+        const newWidth = Math.max(96, Math.ceil(maxW));
+        // set CSS var
+        document.documentElement.style.setProperty('--field-width', newWidth + 'px');
+        // explicitly set each label width to match the computed width so they align correctly left
+        labels.forEach(l => { l.style.width = newWidth + 'px'; l.style.textAlign = 'left'; });
+        // ensure select wrapper matches too
+        document.querySelectorAll('.select-wrap').forEach(sw => sw.style.width = newWidth + 'px');
+      }
+
+      function applyTranslations() {
+        const t = translations[currentLang] || translations.vi;
+        nLabelEl.innerHTML = t.nLabel;
+        lLabelEl.innerHTML = t.lLabel;
+        mLabelEl.innerHTML = t.mLabel;
+        electronSizeLabelEl.innerHTML = t.electronSizeLabel;
+        numPointsLabelEl.innerHTML = t.numPointsLabel;
+        createBtn.textContent = t.createBtn;
+        createBtn.title = t.createBtnTitle || t.createBtn;
+        createBtn.setAttribute('aria-label', t.createBtn);
+        const viOption = langSelect.querySelector('option[value="vi"]');
+        const enOption = langSelect.querySelector('option[value="en"]');
+        if (viOption) viOption.textContent = t.langOptionText_vi;
+        if (enOption) enOption.textContent = t.langOptionText_en;
+        langSelect.title = t.langSelectTitle;
+        langHiddenLabel.textContent = t.langHiddenLabel;
+        // update region/toolbars ARIA labels
+        if (uiRegion) uiRegion.setAttribute('aria-label', t.controlsRegion || 'Controls');
+        const actionsToolbar = document.querySelector('.actions');
+        if (actionsToolbar) actionsToolbar.setAttribute('aria-label', t.actionsToolbarLabel || 'Actions');
+        // ensure the select shows current language
+        langSelect.value = currentLang === 'en' ? 'en' : 'vi';
+        // set document language attribute for accessibility / screen readers
+        document.documentElement.lang = currentLang === 'en' ? 'en' : 'vi';
+        refreshLabel();
+        // update progress text to localized loading text if currently visible or default
+        if (progressEl) progressEl.textContent = t.progressLoading || '';
+        // update status default (if empty)
+        if (statusEl && !statusEl.textContent) statusEl.textContent = t.statusDefault || '';
+        requestAnimationFrame(updateFieldWidth);
+      }
+
+      function refreshLabel() {
+        const nRaw = nEl.value;
+        const lRaw = lEl.value;
+        const mRaw = mEl.value;
+        const t = translations[currentLang] || translations.vi;
+
+        const obsOrb = orbitalHtmlFromQuantum(nRaw, lRaw, mRaw);
+        const nParsed = parseInt(nRaw, 10);
+        const nPrefix = isNaN(nParsed) ? '?' : nParsed;
+
+        if (obsOrb === 'unknown') {
+          label.innerHTML = `${t.orbitalPrefix} chưa xác định`;
+          return;
+        }
+        if (obsOrb === 'invalid') {
+          // provide helpful Vietnamese message about constraints
+          const lParsed = parseInt(lRaw, 10);
+          const mParsed = parseInt(mRaw, 10);
+          if (!isNaN(nParsed) && !isNaN(lParsed) && lParsed >= nParsed) {
+            label.innerHTML = `${t.orbitalPrefix} không hợp lệ (phải có 0 ≤ l ≤ n−1)`;
+            return;
+          }
+          if (!isNaN(lParsed) && !isNaN(mParsed) && Math.abs(mParsed) > Math.abs(lParsed)) {
+            label.innerHTML = `${t.orbitalPrefix} không hợp lệ (|m| ≤ l)`;
+            return;
+          }
+          label.innerHTML = `${t.orbitalPrefix} không hợp lệ`;
+          return;
+        }
+
+        // valid orbital
+        label.innerHTML = `${t.orbitalPrefix} ${nPrefix}${obsOrb}`;
+      }
+
+      // update constraints on inputs when n or l changes
+      function updateConstraintsFromN() {
+        const nVal = parseInt(nEl.value, 10);
+        const maxL = (isNaN(nVal) ? 0 : Math.max(0, nVal - 1));
+        lEl.max = maxL;
+        // keep l within [0, maxL]
+        let lParsed = parseInt(lEl.value, 10);
+        if (isNaN(lParsed)) lParsed = 0;
+        if (lParsed > maxL) lEl.value = maxL;
+        if (lParsed < 0) lEl.value = 0;
+        updateConstraintsFromL();
+      }
+
+      function updateConstraintsFromL() {
+        const lVal = parseInt(lEl.value, 10);
+        const absL = isNaN(lVal) ? 0 : Math.abs(lVal);
+        mEl.min = -absL;
+        mEl.max = absL;
+        let mParsed = parseInt(mEl.value, 10);
+        if (isNaN(mParsed)) mParsed = 0;
+        if (mParsed < -absL) mEl.value = -absL;
+        if (mParsed > absL) mEl.value = absL;
+      }
+
+      // Wire up input events
+      [nEl, lEl, mEl].forEach(el => {
+        if (!el) return;
+        el.addEventListener('input', () => {
+          if (el === nEl) updateConstraintsFromN();
+          if (el === lEl) updateConstraintsFromL();
+          refreshLabel();
+        });
+        el.addEventListener('change', () => {
+          if (el === nEl) updateConstraintsFromN();
+          if (el === lEl) updateConstraintsFromL();
+          refreshLabel();
+        });
+      });
+
+      // ensure at load the constraints are consistent
+      setTimeout(() => {
+        updateConstraintsFromN();
+        refreshLabel();
+      }, 20);
+
+      // Wire up language select
+      function initLangSelect() {
+        langSelect.value = (currentLang === 'en') ? 'en' : 'vi';
+      }
+
+      langSelect.addEventListener('change', () => {
+        currentLang = langSelect.value === 'en' ? 'en' : 'vi';
+        localStorage.setItem('orbital_lang', currentLang);
+        initLangSelect();
+        applyTranslations();
+        updateToggleRotateText();
+      });
+
+      // initial label and translations
+      initLangSelect();
+      applyTranslations();
+
+      // ensure the fields match labels on load and on resize (debounced)
+      let _fwTimeout = null;
+      window.addEventListener('resize', () => {
+        if (_fwTimeout) clearTimeout(_fwTimeout);
+        _fwTimeout = setTimeout(updateFieldWidth, 80);
+      });
+      // run once after initial render
+      setTimeout(updateFieldWidth, 40);
+
+      // Auto-rotate integration
+      let localAutoRotate = true;
+      if (typeof window.autoRotate !== 'undefined') {
+        localAutoRotate = !!window.autoRotate;
+      }
+
+      setTimeout(() => {
+        if (typeof window.autoRotate !== 'undefined') {
+          localAutoRotate = !!window.autoRotate;
+        }
+        updateToggleRotateText();
+      }, 200);
+
+      function updateToggleRotateText() {
+        const t = translations[currentLang] || translations.vi;
+        const text = localAutoRotate ? t.toggleRotateOn : t.toggleRotateOff;
+        toggleBtn.textContent = text;
+        const title = localAutoRotate ? (t.toggleRotateOnTitle || t.toggleRotateOn) : (t.toggleRotateOffTitle || t.toggleRotateOff);
+        toggleBtn.title = title;
+        toggleBtn.setAttribute('aria-label', title);
+      }
+
+      updateToggleRotateText();
+
+      toggleBtn.addEventListener('click', (e) => {
+        if (typeof window.toggleAutoRotate === 'function') {
+          window.toggleAutoRotate();
+          setTimeout(() => {
+            if (typeof window.autoRotate !== 'undefined') {
+              localAutoRotate = !!window.autoRotate;
+            } else {
+              localAutoRotate = !localAutoRotate;
+            }
+            updateToggleRotateText();
+          }, 50);
+        } else {
+          localAutoRotate = !localAutoRotate;
+          updateToggleRotateText();
+          try { window.autoRotate = localAutoRotate; } catch (err) { /* ignore */ }
+        }
+      });
+
+      // Expose refreshOrbitalLabel for external calls
+      window.refreshOrbitalLabel = refreshLabel;
+
+      // If there are DOM axis labels created by sketch.js, attempt to enlarge them (best-effort).
+      setTimeout(() => {
+        ['xLabel','yLabel','zLabel'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.classList.add('axis-label');
+          }
+        });
+        document.querySelectorAll('.axis-label').forEach(el => {
+          el.style.fontSize = '15px';
+          el.style.fontWeight = '600';
+          el.style.color = '#f1f8fb';
+        });
+      }, 300);
+
+      // Expose a helper to set status/progress text with localization awareness
+      window.setLocalizedProgress = function(show, customText) {
+        const t = translations[currentLang] || translations.vi;
+        if (!progressEl) return;
+        if (show) {
+          progressEl.style.display = 'block';
+          progressEl.textContent = customText || t.progressLoading || '';
+        } else {
+          progressEl.style.display = 'none';
+        }
+      };
+
+      // Expose helper to set status area with no-op localization (sketch.js can call)
+      window.setLocalizedStatus = function(text) {
+        if (!statusEl) return;
+        statusEl.textContent = text || '';
+        statusEl.style.display = text ? 'block' : 'none';
+      };
+
+    })();
+  </script>
+</body>
+</html>

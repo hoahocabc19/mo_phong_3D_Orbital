@@ -1,0 +1,109 @@
+@font-face {
+  font-family: 'ArialLocal';
+  src: url('Arial.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #000;
+  font-family: 'ArialLocal', Arial, sans-serif;
+  color: #ddd;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* UI container (gọn hơn) */
+.ui {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(10,10,10,0.78);
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 8px;
+  border-radius: 8px;
+  width: 160px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  user-select: none;
+  box-sizing: border-box;
+}
+
+/* label on top, input below (stacked) */
+.row {
+  display: block;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+
+.row label {
+  display: block;
+  font-size: 12px;
+  color: #dcdcdc;
+  margin-bottom: 4px;
+}
+
+.row input {
+  width: 100%;
+  padding: 6px 6px;
+  font-size: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #fff;
+  border-radius: 4px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Buttons */
+.buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.buttons.small button {
+  font-size: 12px;
+  padding: 6px;
+}
+
+.buttons button {
+  flex: 1;
+  padding: 8px;
+  background: linear-gradient(#222,#111);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.buttons button:hover {
+  filter: brightness(1.06);
+}
+
+/* Ensure canvas covers full screen */
+canvas {
+  display: block;
+}
+
+/* Axis labels style */
+.axis-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  color: #ffffff;
+  font-family: 'ArialLocal', Arial, sans-serif;
+  font-size: 16px;
+  text-align: center;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.5); /* Slight background for better contrast */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 2px 4px;
+}
